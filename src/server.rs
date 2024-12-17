@@ -1,5 +1,5 @@
-use std::net::{TcpListener, TcpStream, ToSocketAddrs};
-use std::thread;
+use async_iterator::Iterator;
+use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
 
 use tendermint_abci::{Application, Error};
 use tracing::{error, info};
@@ -18,12 +18,12 @@ impl ServerBuilder {
         Self { read_buf_size }
     }
 
-    pub fn bind<Addr, App>(self, addr: Addr, app: App) -> Result<Server<App>, Error>
+    pub async fn bind<Addr, App>(self, addr: Addr, app: App) -> Result<Server<App>, Error>
     where
         Addr: ToSocketAddrs,
         App: Application,
     {
-        let listener = TcpListener::bind(addr).map_err(Error::io)?;
+        let listener = TcpListener::bind(addr).await.map_err(Error::io)?;
         let local_addr = listener.local_addr().map_err(Error::io)?.to_string();
         info!("ABCI server running at {}", local_addr);
         Ok(Server {
@@ -43,9 +43,9 @@ pub struct Server<App> {
 }
 
 impl<App: Application> Server<App> {
-    pub fn listen(self) -> Result<(), Error> {
+    pub async fn listen(self) -> Result<(), Error> {
         loop {
-            let (stream, addr) = self.listener.accept().map_err(Error::io)?;
+            let (stream, addr) = self.listener.accept().await.map_err(Error::io)?;
             let addr = addr.to_string();
             info!("Incoming connection from: {}", addr);
             self.spawn_client_handler(stream, addr);
@@ -59,13 +59,15 @@ impl<App: Application> Server<App> {
     fn spawn_client_handler(&self, stream: TcpStream, addr: String) {
         let app = self.app.clone();
         let read_buf_size = self.read_buf_size;
-        let _ = thread::spawn(move || Self::handle_client(stream, addr, app, read_buf_size));
+        let _ = tokio::task::spawn(async move {
+            Self::handle_client(stream, addr, app, read_buf_size).await
+        });
     }
 
-    fn handle_client(stream: TcpStream, addr: String, app: App, read_buf_size: usize) {
+    async fn handle_client(stream: TcpStream, addr: String, app: App, read_buf_size: usize) {
         let mut codec = ServerCodec::new(stream, read_buf_size);
         loop {
-            let request = match codec.next() {
+            let request = match codec.next().await {
                 Some(result) => match result {
                     Ok(r) => r,
                     Err(e) => {
@@ -82,7 +84,7 @@ impl<App: Application> Server<App> {
                 }
             };
             let response = app.handle(request);
-            if let Err(e) = codec.send(response) {
+            if let Err(e) = codec.send(response).await {
                 error!("Failed sending response to client {}: {:?}", addr, e);
                 return;
             }

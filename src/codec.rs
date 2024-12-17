@@ -4,14 +4,12 @@
 //!
 //! [tsp]: https://github.com/tendermint/tendermint/blob/v0.34.x/spec/abci/client-server.md#tsp
 
-use std::{
-    io::{Read, Write},
-    marker::PhantomData,
-};
-
+use async_iterator::Iterator;
 use bytes::{Buf, BufMut, BytesMut};
 use prost::Message;
+use std::marker::{PhantomData, Unpin};
 use tendermint_proto::v0_37::abci::{Request, Response};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use tendermint_abci::Error;
 
@@ -37,7 +35,7 @@ pub struct Codec<S, I, O> {
 
 impl<S, I, O> Codec<S, I, O>
 where
-    S: Read + Write,
+    S: AsyncReadExt + AsyncWriteExt + Unpin,
     I: Message + Default,
     O: Message,
 {
@@ -57,12 +55,12 @@ where
 // Iterating over a codec produces instances of `Result<I>`.
 impl<S, I, O> Iterator for Codec<S, I, O>
 where
-    S: Read,
+    S: AsyncReadExt + Unpin,
     I: Message + Default,
 {
     type Item = Result<I, Error>;
 
-    fn next(&mut self) -> Option<Self::Item> {
+    async fn next(&mut self) -> Option<Self::Item> {
         loop {
             // Try to decode an incoming message from our buffer first
             match decode_length_delimited::<I>(&mut self.read_buf) {
@@ -73,7 +71,7 @@ where
 
             // If we don't have enough data to decode a message, try to read
             // more
-            let bytes_read = match self.stream.read(self.read_window.as_mut()) {
+            let bytes_read = match self.stream.read(self.read_window.as_mut()).await {
                 Ok(br) => br,
                 Err(e) => return Some(Err(Error::io(e))),
             };
@@ -89,16 +87,17 @@ where
 
 impl<S, I, O> Codec<S, I, O>
 where
-    S: Write,
+    S: AsyncWriteExt + Unpin,
     O: Message,
 {
     /// Send a message using this codec.
-    pub fn send(&mut self, message: O) -> Result<(), Error> {
+    pub async fn send(&mut self, message: O) -> Result<(), Error> {
         encode_length_delimited(message, &mut self.write_buf)?;
         while !self.write_buf.is_empty() {
             let bytes_written = self
                 .stream
                 .write(self.write_buf.as_ref())
+                .await
                 .map_err(Error::io)?;
 
             if bytes_written == 0 {
@@ -110,7 +109,7 @@ where
             self.write_buf.advance(bytes_written);
         }
 
-        self.stream.flush().map_err(Error::io)?;
+        self.stream.flush().await.map_err(Error::io)?;
 
         Ok(())
     }

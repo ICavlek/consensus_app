@@ -2,7 +2,8 @@ use consensus_app::server::ServerBuilder;
 use tendermint_abci::KeyValueStoreApp;
 use tracing_subscriber::filter::LevelFilter;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     tracing_subscriber::fmt()
         .with_max_level(LevelFilter::DEBUG)
         .init();
@@ -14,8 +15,9 @@ fn main() {
     let (app, driver) = KeyValueStoreApp::new();
     let server = ServerBuilder::new(read_buf_size)
         .bind(format!("{}:{}", host, port), app)
+        .await
         .unwrap();
 
     std::thread::spawn(move || driver.run());
-    server.listen().unwrap();
+    server.listen().await.unwrap();
 }
