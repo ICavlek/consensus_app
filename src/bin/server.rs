@@ -1,4 +1,5 @@
-use tendermint_abci::{KeyValueStoreApp, ServerBuilder};
+use consensus_app::server::ServerBuilder;
+use tendermint_abci::KeyValueStoreApp;
 use tracing_subscriber::filter::LevelFilter;
 
 fn main() {
