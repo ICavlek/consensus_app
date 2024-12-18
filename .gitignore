@@ -1,2 +1,7 @@
 /target
 Cargo.lock
+web/.parcel-cache
+web/dist
+web/pkg
+web/target
+web/Cargo.lock
