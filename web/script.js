@@ -20,5 +20,14 @@ function connect_socket() {
   }
 }
 
+function send_status() {
+  const xhr = new XMLHttpRequest();
+  xhr.open("GET", "http://127.0.0.1:26657/status", false);
+  xhr.setRequestHeader("Content-Type", "application/json");
+  xhr.send();
+  console.log(xhr.responseText);
+}
+
 run();
-connect_socket()
+connect_socket();
+send_status();
