@@ -9,4 +9,16 @@ async function run() {
   }
 }
 
+function connect_socket() {
+  const ws = new WebSocket("ws://127.0.0.1:26657/websocket");
+  const message = '{"jsonrpc": "2.0", "method": "subscribe", "id": 0, "params": {"query": "tm.event=\'NewBlock\'"}}';
+  ws.onopen = (event) => {
+    ws.send(message);
+  };
+  ws.onmessage = (event) => {
+    console.log(event.data);
+  }
+}
+
 run();
+connect_socket()
