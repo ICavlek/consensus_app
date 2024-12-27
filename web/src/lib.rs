@@ -40,14 +40,12 @@ pub fn verify(
         trusting_period: Duration::new(1209600, 0),
         clock_drift: Duration::new(5, 0),
     };
-    web_sys::console::log_1(&serde_wasm_bindgen::to_value(&untrusted_light_block).unwrap());
-    web_sys::console::log_1(&serde_wasm_bindgen::to_value(&trusted_light_block).unwrap());
-    web_sys::console::log_1(&serde_wasm_bindgen::to_value(&options).unwrap());
+
     let result = verifier.verify_update_header(
         untrusted_light_block.as_untrusted_state(),
         trusted_light_block.as_trusted_state(),
         &options,
-        Time::now(),
+        Time::parse_from_rfc3339("2020-10-21T12:40:04.160328400Z").unwrap(),
     );
     match result {
         Verdict::Success => return JsValue::from_str("SUCCESS"),
