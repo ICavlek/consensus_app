@@ -15,7 +15,8 @@ function connect_socket() {
   };
   ws.onmessage = (event) => {
     let untrusted_signed_header = get_latest_signed_header();
-    let res = verify(untrusted_signed_header, trusted_signed_header, peer_id, validator);
+    let now = new Date().toISOString();
+    let res = verify(untrusted_signed_header, trusted_signed_header, peer_id, validator, now);
     console.log(res);
   }
 }

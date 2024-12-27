@@ -13,11 +13,13 @@ pub fn verify(
     trusted_signed_header: JsValue,
     peer_id: JsValue,
     validator: JsValue,
+    now: JsValue,
 ) -> JsValue {
     let untrusted_signed_header = serde_wasm_bindgen::from_value(untrusted_signed_header).unwrap();
     let trusted_signed_header = serde_wasm_bindgen::from_value(trusted_signed_header).unwrap();
     let peer_id = serde_wasm_bindgen::from_value(peer_id).unwrap();
     let validator = serde_wasm_bindgen::from_value(validator).unwrap();
+    let now: String = serde_wasm_bindgen::from_value(now).unwrap();
 
     let validators = ValidatorSet::without_proposer(vec![validator]);
     let trusted_light_block = LightBlock::new(
@@ -45,7 +47,7 @@ pub fn verify(
         untrusted_light_block.as_untrusted_state(),
         trusted_light_block.as_trusted_state(),
         &options,
-        Time::parse_from_rfc3339("2020-10-21T12:40:04.160328400Z").unwrap(),
+        Time::parse_from_rfc3339(&now).unwrap(),
     );
     match result {
         Verdict::Success => return JsValue::from_str("SUCCESS"),
