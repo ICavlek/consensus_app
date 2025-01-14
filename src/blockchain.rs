@@ -1,6 +1,10 @@
 use std::sync::mpsc::{channel, Receiver, Sender};
 use tendermint_abci::Application;
-use tendermint_proto::abci::{RequestInfo, ResponseCommit, ResponseInfo};
+use tendermint_proto::abci::{
+    RequestBeginBlock, RequestCheckTx, RequestDeliverTx, RequestEndBlock, RequestInfo,
+    RequestInitChain, RequestQuery, ResponseBeginBlock, ResponseCheckTx, ResponseCommit,
+    ResponseDeliverTx, ResponseEndBlock, ResponseInfo, ResponseInitChain, ResponseQuery,
+};
 use tracing::info;
 
 pub const MAX_VARINT_LENGTH: usize = 16;
@@ -18,6 +22,11 @@ impl BlockchainApp {
 }
 
 impl Application for BlockchainApp {
+    fn init_chain(&self, _request: RequestInitChain) -> ResponseInitChain {
+        println!("INIT CHAIN");
+        Default::default()
+    }
+
     fn info(&self, request: RequestInfo) -> ResponseInfo {
         info!(
             "Got info request. Tendermint version: {}; Block version: {}; P2P version: {}",
@@ -34,6 +43,36 @@ impl Application for BlockchainApp {
             last_block_height,
             last_block_app_hash: last_block_app_hash.into(),
         }
+    }
+
+    fn query(&self, _request: RequestQuery) -> ResponseQuery {
+        println!("QUERY");
+        Default::default()
+    }
+
+    fn check_tx(&self, _request: RequestCheckTx) -> ResponseCheckTx {
+        println!("CHECK TX");
+        Default::default()
+    }
+
+    fn begin_block(&self, request: RequestBeginBlock) -> ResponseBeginBlock {
+        println!("[BEGIN BLOCK] Hash: 0x{:x}", request.hash);
+        Default::default()
+    }
+
+    fn deliver_tx(&self, request: RequestDeliverTx) -> ResponseDeliverTx {
+        println!("[DELIVER TX] Bytes: 0x{:x}", request.tx);
+        let tx = match std::str::from_utf8(&request.tx) {
+            Ok(s) => s,
+            Err(e) => panic!("Failed to interpret key as UTF-8: {e}"),
+        };
+        println!("[DELIVER TX] String: {}", tx);
+        Default::default()
+    }
+
+    fn end_block(&self, _request: RequestEndBlock) -> ResponseEndBlock {
+        println!("END BLOCK");
+        Default::default()
     }
 
     fn commit(&self) -> ResponseCommit {
