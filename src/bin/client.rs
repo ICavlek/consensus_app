@@ -1,29 +1,15 @@
 use tendermint_abci::ClientBuilder;
-use tendermint_proto::abci::{RequestDeliverTx, RequestEcho, RequestQuery};
+use tendermint_proto::abci::RequestInfo;
 
 fn main() {
     let mut client = ClientBuilder::default().connect("127.0.0.1:26658").unwrap();
     let res = client
-        .echo(RequestEcho {
-            message: "DINAMOO".to_string(),
+        .info(RequestInfo {
+            version: "1".into(),
+            block_version: 2,
+            p2p_version: 3,
+            abci_version: "4".into(),
         })
         .unwrap();
-    println!("{}", res.message);
-
-    client
-        .deliver_tx(RequestDeliverTx {
-            tx: "test-key=test-value".into(),
-        })
-        .unwrap();
-    client.commit().unwrap();
-
-    let res = client
-        .query(RequestQuery {
-            data: "test-key".into(),
-            path: "".to_string(),
-            height: 0,
-            prove: false,
-        })
-        .unwrap();
-    println!("{:#?}", res.value);
+    println!("{}", res.last_block_height);
 }
