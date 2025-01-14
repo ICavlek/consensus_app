@@ -12,12 +12,11 @@ async fn main() {
     let port = "26658";
     let read_buf_size = 1048576;
 
-    let (app, driver) = BlockchainApp::new();
+    let app = BlockchainApp::new();
     let server = ServerBuilder::new(read_buf_size)
         .bind(format!("{}:{}", host, port), app)
         .await
         .unwrap();
 
-    std::thread::spawn(move || driver.run());
     server.listen().await.unwrap();
 }
