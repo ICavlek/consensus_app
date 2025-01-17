@@ -6,6 +6,8 @@ use tendermint_proto::abci::{
 };
 use tracing::info;
 
+use crate::transaction::Transaction;
+
 pub const MAX_VARINT_LENGTH: usize = 16;
 
 #[derive(Clone)]
@@ -49,9 +51,18 @@ impl Application for BlockchainApp {
         Default::default()
     }
 
-    fn check_tx(&self, _request: RequestCheckTx) -> ResponseCheckTx {
-        println!("CHECK TX");
-        Default::default()
+    fn check_tx(&self, request: RequestCheckTx) -> ResponseCheckTx {
+        let tx = match std::str::from_utf8(&request.tx) {
+            Ok(s) => s,
+            Err(e) => panic!("Failed to interpret key as UTF-8: {e}"),
+        };
+        println!("[CHECK TX] Tx Value: {}", tx);
+        let dinamo = "Zagreb".to_string();
+        ResponseCheckTx {
+            code: 0,
+            data: dinamo.into(),
+            ..Default::default()
+        }
     }
 
     fn begin_block(&self, request: RequestBeginBlock) -> ResponseBeginBlock {
@@ -60,12 +71,8 @@ impl Application for BlockchainApp {
     }
 
     fn deliver_tx(&self, request: RequestDeliverTx) -> ResponseDeliverTx {
-        println!("[DELIVER TX] Bytes: 0x{:x}", request.tx);
-        let tx = match std::str::from_utf8(&request.tx) {
-            Ok(s) => s,
-            Err(e) => panic!("Failed to interpret key as UTF-8: {e}"),
-        };
-        println!("[DELIVER TX] String: {}", tx);
+        let tx: Vec<Transaction> = bincode::deserialize(&request.tx).unwrap();
+        println!("[DELIVER TX] Tx: {:#?}", tx);
         Default::default()
     }
 
@@ -75,6 +82,7 @@ impl Application for BlockchainApp {
     }
 
     fn commit(&self) -> ResponseCommit {
+        println!("COMMIT");
         ResponseCommit {
             data: self.app_hash.clone().into(),
             retain_height: self.height - 1,

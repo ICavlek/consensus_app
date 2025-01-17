@@ -7,10 +7,10 @@ async fn main() {
         program: "./src/data/my_contract_hello.contract_class.json".to_string(),
     })
     .unwrap();
+    let tx = vec![tx.clone(), tx];
     let tx = bincode::serialize(&tx).unwrap();
 
     let tendermint_client = HttpClient::new("http://127.0.0.1:26657").unwrap();
-    let response = tendermint_client.broadcast_tx_async(tx).await;
-
+    let response = tendermint_client.broadcast_tx_sync(tx).await;
     println!("{:#?}", response);
 }
