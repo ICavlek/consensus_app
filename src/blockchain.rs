@@ -11,18 +11,26 @@ use tendermint_proto::abci::{
 };
 use tracing::info;
 
-use crate::transaction::Transaction;
+use crate::transaction::{Transaction, TransactionType};
 
 pub const MAX_VARINT_LENGTH: usize = 16;
 
 type ContractHash = String;
 type Address = String;
 
+#[derive(Clone, Debug)]
+struct Contract {
+    key: String,
+    storage: String,
+    proof: String,
+}
+
 #[derive(Clone)]
 pub struct BlockchainApp {
     height: Cell<i64>,
     app_hash: Vec<u8>,
-    storage: RefCell<HashMap<ContractHash, HashMap<Address, String>>>,
+    contracts: RefCell<HashMap<ContractHash, HashMap<Address, Contract>>>,
+    state_root: RefCell<String>,
 }
 
 impl BlockchainApp {
@@ -30,7 +38,8 @@ impl BlockchainApp {
         Self {
             height: Cell::new(0),
             app_hash: vec![0_u8; MAX_VARINT_LENGTH],
-            storage: RefCell::new(HashMap::new()),
+            contracts: RefCell::new(HashMap::new()),
+            state_root: RefCell::new("0x0".to_string()),
         }
     }
 }
@@ -72,11 +81,18 @@ impl Application for BlockchainApp {
     }
 
     fn deliver_tx(&self, request: RequestDeliverTx) -> ResponseDeliverTx {
-        let tx: Vec<Transaction> = bincode::deserialize(&request.tx).unwrap();
+        let txs: Vec<Transaction> = bincode::deserialize(&request.tx).unwrap();
+        let tx = txs[0].clone();
         let height = self.height.get() + 1;
         self.height.set(height);
-        let mut storage = self.storage.borrow_mut();
-        storage.insert(tx[0].transaction_hash.clone(), HashMap::new());
+        match tx.transaction_type {
+            TransactionType::Declare { .. } => {
+                let mut contracts = self.contracts.borrow_mut();
+                contracts.insert(tx.transaction_hash, HashMap::new());
+            }
+            TransactionType::Invoke { .. } => {}
+            TransactionType::DeployAccount { .. } => {}
+        }
         ResponseDeliverTx {
             code: 0,
             ..Default::default()
@@ -88,7 +104,7 @@ impl Application for BlockchainApp {
     }
 
     fn commit(&self) -> ResponseCommit {
-        println!("COMMIT: {:#?}", self.storage);
+        println!("COMMIT: {:#?}", self.contracts);
         ResponseCommit {
             retain_height: 0,
             ..Default::default()
