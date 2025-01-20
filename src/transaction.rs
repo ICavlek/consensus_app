@@ -12,7 +12,17 @@ pub struct Transaction {
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum TransactionType {
-    Declare { program: String },
+    Declare {
+        program: String,
+    },
+    DeployAccount {
+        account: String,
+    },
+    Invoke {
+        address: String,
+        function: String,
+        inputs: Option<Vec<i32>>,
+    },
 }
 
 impl Transaction {
@@ -39,6 +49,14 @@ impl TransactionType {
                     contract.class_hash().unwrap() // hex::encode(contract_hash.to_bytes_be())
                 ))
             }
+            TransactionType::DeployAccount { .. } => Ok("0x1".to_string()),
+            TransactionType::Invoke {
+                address,
+                function,
+                inputs,
+            } => Ok(format!(
+                "Invoked {function} with inputs {inputs:?} for contract in address {address}"
+            )),
         }
     }
 }
