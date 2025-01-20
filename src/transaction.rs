@@ -21,7 +21,7 @@ pub enum TransactionType {
     Invoke {
         address: String,
         function: String,
-        inputs: Option<Vec<i32>>,
+        inputs: Option<Vec<String>>,
     },
 }
 

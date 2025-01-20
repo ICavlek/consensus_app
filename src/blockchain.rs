@@ -52,11 +52,8 @@ impl Application for BlockchainApp {
     }
 
     fn check_tx(&self, request: RequestCheckTx) -> ResponseCheckTx {
-        let tx = match std::str::from_utf8(&request.tx) {
-            Ok(s) => s,
-            Err(e) => panic!("Failed to interpret key as UTF-8: {e}"),
-        };
-        println!("[CHECK TX] Tx Value: {}", tx);
+        let tx: Vec<Transaction> = bincode::deserialize(&request.tx).unwrap();
+        println!("[CHECK TX] Tx Value: {:#?}", tx);
         let dinamo = "Zagreb".to_string();
         ResponseCheckTx {
             code: 0,
