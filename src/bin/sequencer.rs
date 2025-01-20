@@ -7,11 +7,7 @@ async fn main() {
         program: "./src/data/my_contract_hello.contract_class.json".to_string(),
     })
     .unwrap();
-    let tx_deploy = Transaction::with_type(TransactionType::DeployAccount {
-        account: "./src/data/account.json".to_string(),
-    })
-    .unwrap();
-    let txs = vec![tx_declare, tx_deploy];
+    let txs = vec![tx_declare];
     send_to_sequencer(txs).await;
 }
 
