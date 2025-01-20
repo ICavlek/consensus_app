@@ -44,6 +44,7 @@ impl TransactionType {
                 )
                 .unwrap();
                 let class_hash = contract.class_hash().unwrap();
+                println!("{}", class_hash.bits());
                 Ok(format!("{class_hash:#064x}"))
             }
             TransactionType::DeployAccount { .. } => Ok("0x1".to_string()),

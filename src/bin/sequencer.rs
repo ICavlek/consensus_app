@@ -9,13 +9,13 @@ async fn main() {
     .unwrap();
     send_to_sequencer(vec![tx_declare]).await;
 
-    let tx_deploy = Transaction::with_type(TransactionType::Invoke {
-        address: "0x0493429f345e634ae58eef2a3984540bdaaa37da0105636dd1d0e75898fe7cc0".to_string(),
-        function: "universal_deployer".to_string(),
-        inputs: Some(vec!["0x64696e616d6f".to_string()]),
-    })
-    .unwrap();
-    send_to_sequencer(vec![tx_deploy]).await;
+    // let tx_deploy = Transaction::with_type(TransactionType::Invoke {
+    //     address: "0x0493429f345e634ae58eef2a3984540bdaaa37da0105636dd1d0e75898fe7cc0".to_string(),
+    //     function: "universal_deployer".to_string(),
+    //     inputs: Some(vec!["0x64696e616d6f".to_string()]),
+    // })
+    // .unwrap();
+    // send_to_sequencer(vec![tx_deploy]).await;
 }
 
 async fn send_to_sequencer(txs: Vec<Transaction>) {

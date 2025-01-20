@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use tendermint_abci::Application;
 use tendermint_proto::abci::{
     RequestBeginBlock, RequestCheckTx, RequestDeliverTx, RequestEndBlock, RequestInfo,
@@ -12,14 +14,14 @@ pub const MAX_VARINT_LENGTH: usize = 16;
 
 #[derive(Clone)]
 pub struct BlockchainApp {
-    height: i64,
+    height: Cell<i64>,
     app_hash: Vec<u8>,
 }
 
 impl BlockchainApp {
     pub fn new() -> Self {
         Self {
-            height: 0,
+            height: Cell::new(0),
             app_hash: vec![0_u8; MAX_VARINT_LENGTH],
         }
     }
@@ -27,7 +29,6 @@ impl BlockchainApp {
 
 impl Application for BlockchainApp {
     fn init_chain(&self, _request: RequestInitChain) -> ResponseInitChain {
-        println!("INIT CHAIN");
         Default::default()
     }
 
@@ -41,48 +42,45 @@ impl Application for BlockchainApp {
             data: "blockchain-rs".to_string(),
             version: "0.1.0".to_string(),
             app_version: 1,
-            last_block_height: self.height,
+            last_block_height: self.height.get(),
             last_block_app_hash: self.app_hash.clone().into(),
         }
     }
 
     fn query(&self, _request: RequestQuery) -> ResponseQuery {
-        println!("QUERY");
         Default::default()
     }
 
     fn check_tx(&self, request: RequestCheckTx) -> ResponseCheckTx {
-        let tx: Vec<Transaction> = bincode::deserialize(&request.tx).unwrap();
-        println!("[CHECK TX] Tx Value: {:#?}", tx);
-        let dinamo = "Zagreb".to_string();
+        let _tx: Vec<Transaction> = bincode::deserialize(&request.tx).unwrap();
         ResponseCheckTx {
             code: 0,
-            data: dinamo.into(),
             ..Default::default()
         }
     }
 
-    fn begin_block(&self, request: RequestBeginBlock) -> ResponseBeginBlock {
-        println!("[BEGIN BLOCK] Hash: 0x{:x}", request.hash);
+    fn begin_block(&self, _request: RequestBeginBlock) -> ResponseBeginBlock {
         Default::default()
     }
 
     fn deliver_tx(&self, request: RequestDeliverTx) -> ResponseDeliverTx {
-        let tx: Vec<Transaction> = bincode::deserialize(&request.tx).unwrap();
-        println!("[DELIVER TX] Tx: {:#?}", tx);
-        Default::default()
+        let _tx: Vec<Transaction> = bincode::deserialize(&request.tx).unwrap();
+        let height = self.height.get() + 1;
+        self.height.set(height);
+        ResponseDeliverTx {
+            code: 0,
+            ..Default::default()
+        }
     }
 
     fn end_block(&self, _request: RequestEndBlock) -> ResponseEndBlock {
-        println!("END BLOCK");
         Default::default()
     }
 
     fn commit(&self) -> ResponseCommit {
-        println!("COMMIT");
         ResponseCommit {
-            data: self.app_hash.clone().into(),
-            retain_height: self.height - 1,
+            retain_height: 0,
+            ..Default::default()
         }
     }
 }
