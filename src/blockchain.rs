@@ -15,11 +15,14 @@ use crate::transaction::Transaction;
 
 pub const MAX_VARINT_LENGTH: usize = 16;
 
+type ContractHash = String;
+type Address = String;
+
 #[derive(Clone)]
 pub struct BlockchainApp {
     height: Cell<i64>,
     app_hash: Vec<u8>,
-    storage: RefCell<HashMap<String, String>>,
+    storage: RefCell<HashMap<ContractHash, HashMap<Address, String>>>,
 }
 
 impl BlockchainApp {
@@ -69,11 +72,11 @@ impl Application for BlockchainApp {
     }
 
     fn deliver_tx(&self, request: RequestDeliverTx) -> ResponseDeliverTx {
-        let _tx: Vec<Transaction> = bincode::deserialize(&request.tx).unwrap();
+        let tx: Vec<Transaction> = bincode::deserialize(&request.tx).unwrap();
         let height = self.height.get() + 1;
         self.height.set(height);
         let mut storage = self.storage.borrow_mut();
-        storage.insert("DINAMO".to_string(), "ZAGREB".to_string());
+        storage.insert(tx[0].transaction_hash.clone(), HashMap::new());
         ResponseDeliverTx {
             code: 0,
             ..Default::default()
