@@ -1,4 +1,7 @@
-use std::cell::Cell;
+use std::{
+    cell::{Cell, RefCell},
+    collections::HashMap,
+};
 
 use tendermint_abci::Application;
 use tendermint_proto::abci::{
@@ -16,6 +19,7 @@ pub const MAX_VARINT_LENGTH: usize = 16;
 pub struct BlockchainApp {
     height: Cell<i64>,
     app_hash: Vec<u8>,
+    storage: RefCell<HashMap<String, String>>,
 }
 
 impl BlockchainApp {
@@ -23,6 +27,7 @@ impl BlockchainApp {
         Self {
             height: Cell::new(0),
             app_hash: vec![0_u8; MAX_VARINT_LENGTH],
+            storage: RefCell::new(HashMap::new()),
         }
     }
 }
@@ -67,6 +72,8 @@ impl Application for BlockchainApp {
         let _tx: Vec<Transaction> = bincode::deserialize(&request.tx).unwrap();
         let height = self.height.get() + 1;
         self.height.set(height);
+        let mut storage = self.storage.borrow_mut();
+        storage.insert("DINAMO".to_string(), "ZAGREB".to_string());
         ResponseDeliverTx {
             code: 0,
             ..Default::default()
@@ -78,6 +85,7 @@ impl Application for BlockchainApp {
     }
 
     fn commit(&self) -> ResponseCommit {
+        println!("COMMIT: {:#?}", self.storage);
         ResponseCommit {
             retain_height: 0,
             ..Default::default()
