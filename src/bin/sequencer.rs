@@ -11,8 +11,13 @@ async fn main() {
         account: "./src/data/account.json".to_string(),
     })
     .unwrap();
-    let tx = vec![tx_declare, tx_deploy];
-    let tx = bincode::serialize(&tx).unwrap();
+    let txs = vec![tx_declare, tx_deploy];
+    send_to_sequencer(txs).await;
+}
+
+async fn send_to_sequencer(txs: Vec<Transaction>) {
+    // Check each transaction on tendermint.check call
+    let tx = bincode::serialize(&txs).unwrap();
 
     let tendermint_client = HttpClient::new("http://127.0.0.1:26657").unwrap();
     let response = tendermint_client.broadcast_tx_sync(tx).await;

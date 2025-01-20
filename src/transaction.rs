@@ -43,11 +43,8 @@ impl TransactionType {
                     std::fs::File::open(&program).unwrap(),
                 )
                 .unwrap();
-                Ok(format!(
-                    "{}{}",
-                    "0x",
-                    contract.class_hash().unwrap() // hex::encode(contract_hash.to_bytes_be())
-                ))
+                let class_hash = contract.class_hash().unwrap();
+                Ok(format!("{class_hash:#064x}"))
             }
             TransactionType::DeployAccount { .. } => Ok("0x1".to_string()),
             TransactionType::Invoke {
