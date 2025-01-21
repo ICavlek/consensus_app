@@ -1,7 +1,4 @@
-use std::{
-    cell::{Cell, RefCell},
-    collections::HashMap,
-};
+use std::{cell::RefCell, collections::HashMap};
 
 use tendermint_abci::Application;
 use tendermint_proto::abci::{
@@ -15,8 +12,11 @@ use crate::transaction::{Transaction, TransactionType};
 
 pub const MAX_VARINT_LENGTH: usize = 16;
 
+type StateRoot = String;
 type ContractHash = String;
 type Address = String;
+type ContractStore = HashMap<ContractHash, HashMap<Address, Contract>>;
+type Block = (ContractStore, StateRoot);
 
 #[derive(Clone, Debug)]
 struct Contract {
@@ -27,25 +27,23 @@ struct Contract {
 
 #[derive(Clone)]
 pub struct BlockchainApp {
-    height: Cell<i64>,
     app_hash: Vec<u8>,
-    contracts: RefCell<HashMap<ContractHash, HashMap<Address, Contract>>>,
-    state_root: RefCell<String>,
+    blocks: RefCell<Vec<Block>>,
 }
 
 impl BlockchainApp {
     pub fn new() -> Self {
         Self {
-            height: Cell::new(0),
             app_hash: vec![0_u8; MAX_VARINT_LENGTH],
-            contracts: RefCell::new(HashMap::new()),
-            state_root: RefCell::new("0x0".to_string()),
+            blocks: RefCell::new(vec![]),
         }
     }
 }
 
 impl Application for BlockchainApp {
     fn init_chain(&self, _request: RequestInitChain) -> ResponseInitChain {
+        let mut blocks = self.blocks.borrow_mut();
+        blocks.push((HashMap::new(), "0x0".to_string()));
         Default::default()
     }
 
@@ -59,7 +57,7 @@ impl Application for BlockchainApp {
             data: "blockchain-rs".to_string(),
             version: "0.1.0".to_string(),
             app_version: 1,
-            last_block_height: self.height.get(),
+            last_block_height: self.blocks.borrow().len() as i64,
             last_block_app_hash: self.app_hash.clone().into(),
         }
     }
@@ -83,12 +81,12 @@ impl Application for BlockchainApp {
     fn deliver_tx(&self, request: RequestDeliverTx) -> ResponseDeliverTx {
         let txs: Vec<Transaction> = bincode::deserialize(&request.tx).unwrap();
         let tx = txs[0].clone();
-        let height = self.height.get() + 1;
-        self.height.set(height);
         match tx.transaction_type {
             TransactionType::Declare { .. } => {
-                let mut contracts = self.contracts.borrow_mut();
-                contracts.insert(tx.transaction_hash, HashMap::new());
+                let mut blocks = self.blocks.borrow_mut();
+                let mut new_block = (HashMap::new(), "0x0".to_string());
+                new_block.0.insert(tx.transaction_hash, HashMap::new());
+                blocks.push(new_block);
             }
             TransactionType::Invoke { .. } => {}
             TransactionType::DeployAccount { .. } => {}
@@ -104,7 +102,7 @@ impl Application for BlockchainApp {
     }
 
     fn commit(&self) -> ResponseCommit {
-        println!("COMMIT: {:#?}", self.contracts);
+        println!("COMMIT: {:#?}", self.blocks);
         ResponseCommit {
             retain_height: 0,
             ..Default::default()
