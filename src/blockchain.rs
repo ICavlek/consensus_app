@@ -15,15 +15,12 @@ pub const MAX_VARINT_LENGTH: usize = 16;
 type StateRoot = String;
 type ContractHash = String;
 type Address = String;
+type Key = String;
+type Storage = String;
+type Proof = String;
+type Contract = (Key, Storage, Proof);
 type ContractStore = HashMap<ContractHash, HashMap<Address, Contract>>;
 type Block = (ContractStore, StateRoot);
-
-#[derive(Clone, Debug)]
-struct Contract {
-    key: String,
-    storage: String,
-    proof: String,
-}
 
 #[derive(Clone)]
 pub struct BlockchainApp {
@@ -88,7 +85,22 @@ impl Application for BlockchainApp {
                 new_block.0.insert(tx.transaction_hash, HashMap::new());
                 blocks.push(new_block);
             }
-            TransactionType::Invoke { .. } => {}
+            TransactionType::Invoke {
+                address,
+                key,
+                storage,
+            } => {
+                let mut blocks = self.blocks.borrow_mut();
+                let new_block = (
+                    HashMap::from([(
+                        tx.transaction_hash,
+                        HashMap::from([(address, (key, storage, generate_proof()))]),
+                    )]),
+                    "0x06cbb5937c087bdece6ffe0a76300e097f082625ad407da1e62afb2f48bed6e7"
+                        .to_string(),
+                );
+                blocks.push(new_block);
+            }
             TransactionType::DeployAccount { .. } => {}
         }
         ResponseDeliverTx {
@@ -108,4 +120,8 @@ impl Application for BlockchainApp {
             ..Default::default()
         }
     }
+}
+
+fn generate_proof() -> String {
+    std::fs::read_to_string("./src/data/proof.json").unwrap()
 }

@@ -20,8 +20,8 @@ pub enum TransactionType {
     },
     Invoke {
         address: String,
-        function: String,
-        inputs: Option<Vec<String>>,
+        key: String,
+        storage: String,
     },
 }
 
@@ -44,16 +44,15 @@ impl TransactionType {
                 )
                 .unwrap();
                 let class_hash = contract.class_hash().unwrap();
-                println!("{}", class_hash);
                 Ok(format!("{class_hash:#064x}"))
             }
             TransactionType::DeployAccount { .. } => Ok("0x1".to_string()),
             TransactionType::Invoke {
                 address,
-                function,
-                inputs,
+                key,
+                storage,
             } => Ok(format!(
-                "Invoked {function} with inputs {inputs:?} for contract in address {address}"
+                "Address: {address}, Key: {key}, Storage: {storage}"
             )),
         }
     }
