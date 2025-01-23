@@ -1,5 +1,5 @@
 # Consensus Application
-Server designed to communicate with tendermint, inspired by tendermint-rs example
+Simple architecture that proposes Starknet blockchain with the usage of Tendermint as a consensus
 
 ## Overview
 This project integrates a Starknet inspired sequencer, Tendermint consensus mechanism, and a Tendermint light client, providing a scalable solution for decentralized applications leveraging Tendermint's Byzantine Fault Tolerant (BFT) consensus connected with a simple blockchain storage.
@@ -16,6 +16,7 @@ This project integrates a Starknet inspired sequencer, Tendermint consensus mech
 ### Tendermint Light Client
 - Verifies the correctness of blocks without running a full node
 - Verifies the proofs from the transactions
+- Written in browser's console
 
 ## Installation
 ### Prerequisites
@@ -57,7 +58,16 @@ cargo run --bin sequencer -- deploy
 ```
 
 ## Further Work
-TODO
+Because of the basic approach towards this application, furhter work should be considered for improvement:
+- [ ] [General] Removal of hardcoded stuff 
+- [ ] [Sequencer] Multiple transactions that could be batched in a single transaction
+- [ ] [Sequncer] Check transactions with Tendermint rpc call /check before sending them
+- [ ] [Sequencer] Better argument parsing
+- [ ] [Sequencer, Blockchain] Adding account declare transaction
+- [ ] [Blockchain] Better storage instead of simple HashMap
+- [ ] [LightClient, Blockchain] Reading proof from Tendermint client
+- [ ] [LightClient] It takes couple of blocks to have it verified. If no empty blocks is allowed, then it fails to verify
+- [ ] [Prover] New module which would generate proof
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
