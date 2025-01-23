@@ -114,7 +114,6 @@ impl Application for BlockchainApp {
     }
 
     fn commit(&self) -> ResponseCommit {
-        println!("COMMIT: {:#?}", self.blocks);
         ResponseCommit {
             retain_height: 0,
             ..Default::default()
